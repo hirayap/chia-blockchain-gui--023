@@ -1,0 +1,65 @@
+{
+  "name": "@chia-network/icons",
+  "author": "Chia Network <hello@chia.net> (https://chia.net/)",
+  "description": "Chia Icons Library",
+  "productName": "Chia Blockchain",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "dist/index.js",
+  "module": "dist/esm.js",
+  "types": "./dist/types",
+  "scripts": {
+    "build": "npm run build:js",
+    "build:js": "concurrently \"rollup -c\" \"tsc --emitDeclarationOnly\"",
+    "build:ci": "npm run build:js",
+    "build:watch": "concurrently \"tsc --emitDeclarationOnly --watch\" \"rollup -c -w\"",
+    "check:types": "tsc --noEmit --emitDeclarationOnly false",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@babel/runtime": "7.27.6",
+    "core-js": "3.47.0",
+    "match-sorter": "6.3.4",
+    "use-dark-mode": "2.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "7.27.4",
+    "@babel/plugin-transform-runtime": "7.27.4",
+    "@babel/preset-env": "7.27.2",
+    "@babel/preset-react": "7.27.1",
+    "@babel/preset-typescript": "7.27.1",
+    "@mui/icons-material": "5.14.3",
+    "@mui/material": "5.14.5",
+    "@mui/styled-engine-sc": "5.12.0",
+    "@rollup/plugin-alias": "5.0.0",
+    "@rollup/plugin-babel": "6.0.4",
+    "@rollup/plugin-commonjs": "25.0.4",
+    "@rollup/plugin-node-resolve": "15.2.1",
+    "@svgr/rollup": "8.1.0",
+    "@types/core-js": "2.5.5",
+    "@types/isomorphic-fetch": "0.0.36",
+    "@types/jest": "29.5.3",
+    "@types/lodash": "4.14.197",
+    "@types/react": "18.2.20",
+    "@types/react-router-dom": "5.3.3",
+    "@types/styled-components": "5.1.26",
+    "babel-plugin-macros": "3.1.0",
+    "babel-plugin-styled-components": "2.1.4",
+    "babel-plugin-transform-imports": "2.0.0",
+    "concurrently": "8.2.1",
+    "jest": "29.6.3",
+    "react": "18.2.0",
+    "rollup": "4.59.0",
+    "rollup-plugin-node-externals": "7.1.2",
+    "styled-components": "6.0.7",
+    "typescript": "5.7.3"
+  },
+  "peerDependencies": {
+    "@mui/icons-material": "^5.14.3",
+    "@mui/material": "^5.14.5",
+    "react": "^18.2.0",
+    "styled-components": "^6.0.7"
+  }
+}

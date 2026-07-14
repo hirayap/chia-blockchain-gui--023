@@ -1,0 +1,112 @@
+import { useLocalStorage } from '@chia-network/api-react';
+import { useCallback, useState, useEffect } from 'react';
+
+import compareAppVersions from '../utils/compareAppVersion';
+
+import useAppVersion from './useAppVersion';
+
+type UseGetLatestVersionFromWebsiteResult = {
+  appVersion: string | undefined;
+  latestVersion: string | null;
+  downloadUrl: string | undefined;
+  releaseNotesUrl: string | undefined;
+  blogUrl: string | undefined;
+  isLoading: boolean;
+  newVersionAvailable: boolean;
+  isVersionSkipped: boolean;
+  skipVersions: string[] | undefined;
+  addVersionToSkip: (version: string) => void;
+};
+
+export default function useGetLatestVersionFromWebsite(): UseGetLatestVersionFromWebsiteResult {
+  const [latestVersion, setLatestVersion] = useState<string | null>(null);
+  const [downloadPath, setDownloadPath] = useState<string | null>(null);
+  const [releaseNotesPath, setReleaseNotesPath] = useState<string | null>(null);
+  const [blogPath, setBlogPath] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [latestVersionURL] = useLocalStorage<string>(
+    'latestVersionURL',
+    'https://download.chia.net/latest/latest.json',
+  );
+  const [skipVersions, setSkipVersions] = useLocalStorage<string[]>('skipVersions', []);
+  const { version: appVersion } = useAppVersion();
+  const versionComparisonResult = latestVersion ? compareAppVersions(appVersion, latestVersion) : 0;
+  const newVersionAvailable = versionComparisonResult === -1;
+  const isVersionSkipped = skipVersions?.includes(latestVersion ?? '') ?? false;
+
+  const addVersionToSkip = useCallback(
+    (version: string) => {
+      setSkipVersions((prev) => [...(prev ?? []), version]);
+    },
+    [setSkipVersions],
+  );
+
+  useEffect(() => {
+    if (!latestVersionURL) {
+      return;
+    }
+
+    async function validateBlogUrl(blogUrlPath: string): Promise<boolean> {
+      try {
+        const fullBlogUrl = new URL(blogUrlPath, 'https://www.chia.net/').toString();
+        const blogResponse = await fetch(fullBlogUrl, { method: 'HEAD' });
+        return blogResponse.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    async function fetchLatestVersion() {
+      try {
+        const response = await fetch(latestVersionURL as string, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept-Encoding': 'identity',
+          },
+        });
+
+        const data = await response.json();
+        const { version, downloadPageUrl, releaseNotesUrl, blogUrl } = data;
+
+        let validatedBlogUrl: string | null = blogUrl ?? null;
+        if (blogUrl) {
+          const blogExists = await validateBlogUrl(blogUrl);
+          if (!blogExists) {
+            validatedBlogUrl = null;
+          }
+        }
+
+        setTimeout(() => {
+          setLatestVersion(version);
+          setDownloadPath(downloadPageUrl);
+          setReleaseNotesPath(releaseNotesUrl);
+          setBlogPath(validatedBlogUrl);
+          setIsLoading(false);
+        }, 1000); /* we need the delay, otherwise dialog will close too fast */
+      } catch (e) {
+        /* we don't need to handle error here, if we are unable to fetch version number
+           from chia.net, we just ignore showing reminder dialog */
+      }
+    }
+
+    fetchLatestVersion();
+  }, [latestVersionURL]);
+
+  const downloadUrl = downloadPath ? new URL(downloadPath, 'https://www.chia.net/').toString() : undefined;
+  const releaseNotesUrl = releaseNotesPath ? new URL(releaseNotesPath, 'https://www.chia.net/').toString() : undefined;
+  const blogUrl = blogPath ? new URL(blogPath, 'https://www.chia.net/').toString() : undefined;
+
+  return {
+    appVersion,
+    latestVersion,
+    newVersionAvailable,
+    isVersionSkipped,
+    skipVersions,
+    addVersionToSkip,
+    isLoading,
+    downloadUrl,
+    releaseNotesUrl,
+    blogUrl,
+  };
+}

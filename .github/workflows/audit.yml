@@ -1,0 +1,57 @@
+name: Check npm audit and locales
+
+on:
+  push:
+    branches:
+      - long_lived/**
+      - main
+      - release/**
+    tags:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.workflow }}-${{ github.event_name }}--${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/long_lived/')) && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Check npm audit
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Cache npm
+        uses: actions/cache@v5
+        env:
+          cache-name: cache-node-modules
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Setup Node 24.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+
+      - name: Check npm audit on ${{ matrix.os }}
+        shell: bash
+        run: |
+          npm audit --audit-level=high
